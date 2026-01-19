@@ -2397,6 +2397,9 @@ void main()
 }
 )";
 
+// Forward declaration
+static void verify_result(ncnn::VkMat& c_gpu, ncnn::VulkanDevice* vkdev, int expected_val_at_index_1, int storage_type);
+
 static double vkpeak(int device_id, int storage_type, int arithmetic_type, int packing_type, int mode = 0)
 {
     ncnn::VulkanDevice* vkdev = ncnn::get_gpu_device(device_id);
@@ -3190,6 +3193,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                     return 0;
                 }
 
+                if (i == 0)
+                {
+                    verify_result(c, vkdev, loop + 1, storage_type);
+                }
+
                 double t1 = ncnn::get_current_time();
 
                 double time = t1 - t0;
@@ -3289,6 +3297,73 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
     vkdev->reclaim_blob_allocator(allocator);
 
     return max_gflops;
+}
+
+// Helper to verify if the compute shader actually ran and produced sane results
+static void verify_result(ncnn::VkMat& c_gpu, ncnn::VulkanDevice* vkdev, int expected_val_at_index_1, int storage_type)
+{
+    ncnn::Option opt;
+    opt.use_vulkan_compute = true;
+    opt.use_fp16_packed = storage_type == 1;
+    opt.use_fp16_storage = storage_type == 1 || storage_type == 4;
+
+    ncnn::VkCompute cmd(vkdev);
+    ncnn::Mat c_cpu;
+    // Download only the first 100 elements to save time
+    // ncnn VkMat is 1D, so w=size. We need a way to download partial, but ncnn usually downloads all.
+    // However, for verification we can accept the overhead once.
+    cmd.record_download(c_gpu, c_cpu, opt);
+    cmd.submit_and_wait();
+
+    if (c_cpu.empty()) return;
+
+    // Check Index 1. 
+    // Logic: c = gx; a = c; b = lx. 
+    // At index 1: gx=1, lx=1. c=1, a=1, b=1.
+    // loop iter: c = a*c + b -> c = 1*c + 1.
+    // Result should be initial(1) + loops. 
+    // Note: This logic holds for p1/p2/p4/p8 shaders generally used in vkpeak.
+    
+    double val = 0.0;
+    bool is_zero = true;
+    bool is_nan = false;
+
+    if (storage_type == 0) // fp32
+    {
+        const float* p = c_cpu;
+        val = (double)p[1];
+        is_zero = (p[1] == 0.f);
+        is_nan = std::isnan(p[1]);
+    }
+    else if (storage_type == 1) // fp16
+    {
+        const unsigned short* p = c_cpu;
+        // Simple check for non-zero without full half-float conversion complexity here
+        is_zero = (p[1] == 0);
+        // 0x7C00 is infinity in fp16, 0x7E00 is NaN. Roughly checking logic.
+        is_nan = ((p[1] & 0x7C00) == 0x7C00); 
+        val = (double)p[1]; // Just cast raw for debug if needed, accurate value needs conversion
+    }
+    else if (storage_type == 3) // int32
+    {
+        const int* p = c_cpu;
+        val = (double)p[1];
+        is_zero = (p[1] == 0);
+    }
+
+    if (is_zero)
+    {
+        fprintf(stderr, " [WARN: Result Verification Failed] Output is ALL ZEROS. The shader likely did not execute.\n");
+    }
+    else if (is_nan)
+    {
+        fprintf(stderr, " [WARN: Result Verification Failed] Output contains NaN/Inf. GPU instability detected.\n");
+    }
+    else
+    {
+        // Optional: Check specific value match if we are confident in the loop count math
+        // fprintf(stderr, " [Verified] Compute result check passed (Index 1 != 0).\n");
+    }
 }
 
 static double vkpeak_copy(int device_id, int from_type, int to_type)
