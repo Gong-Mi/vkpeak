@@ -65,6 +65,62 @@ void main()
 }
 )";
 
+static const char glsl_p2_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { float c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    afpvec2 c = afpvec2(gx);
+
+    afpvec2 a = c + afpvec2(0,1);
+    afpvec2 b = afpvec2(lx) + afpvec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c = a * c + b;)
+    R"(
+}
+
+    c_blob_data[gx] = float(c[0] + c[1]);
+}
+)";
+
+static const char glsl_p2_dual_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { float c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    afpvec2 c0 = afpvec2(gx);
+    afpvec2 c1 = afpvec2(lx);
+
+    afpvec2 a = c0 + afpvec2(0,1);
+    afpvec2 b = c1 + afpvec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = float(c0[0] + c0[1]);
+}
+)";
+
 static const char glsl_p4_data[] = R"(
 #version 450
 
@@ -119,6 +175,66 @@ void main()
 }
 )";
 
+static const char glsl_p8_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { float c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    afpvec4 c0 = afpvec4(gx);
+    afpvec4 c1 = afpvec4(lx);
+
+    afpvec4 a = c0 + afpvec4(0,1,2,-3);
+    afpvec4 b = c1 + afpvec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = float((c0[0] + c0[1]) + (c0[2] + c0[3]));
+}
+)";
+
+static const char glsl_p8_dual_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { float c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    afpvec4 c0 = afpvec4(gx);
+    afpvec4 c1 = afpvec4(lx);
+    afpvec4 c2 = afpvec4(gx) + afpvec4(1);
+    afpvec4 c3 = afpvec4(lx) + afpvec4(1);
+
+    afpvec4 a = c0 + afpvec4(0,1,2,-3);
+    afpvec4 b = c1 + afpvec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b; c2 = a * c2 + b; c3 = a * c3 + b;)
+    R"(
+}
+
+    c0 = c0 + c1 + c2 + c3;
+    c_blob_data[gx] = float((c0[0] + c0[1]) + (c0[2] + c0[3]));
+}
+)";
+
 static const char glsl_fp64_p1_data[] = R"(
 #version 450
 
@@ -166,10 +282,67 @@ void main()
     for (int i = 0; i < loop; i++)
     {)"
         REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
-    R"(}
+    R"(
+}
 
     c0 = c0 + c1;
     c_blob_data[gx] = c0;
+}
+)";
+
+static const char glsl_fp64_p2_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { double c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    dvec2 c = dvec2(gx);
+
+    dvec2 a = c + dvec2(0,1);
+    dvec2 b = dvec2(lx) + dvec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c = a * c + b;)
+    R"(
+}
+
+    c_blob_data[gx] = c[0] + c[1];
+}
+)";
+
+static const char glsl_fp64_p2_dual_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { double c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    dvec2 c0 = dvec2(gx);
+    dvec2 c1 = dvec2(lx);
+
+    dvec2 a = c0 + dvec2(0,1);
+    dvec2 b = c1 + dvec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = c0[0] + c0[1];
 }
 )";
 
@@ -223,6 +396,66 @@ void main()
     R"(}
 
     c0 = c0 + c1;
+    c_blob_data[gx] = (c0[0] + c0[1]) + (c0[2] + c0[3]);
+}
+)";
+
+static const char glsl_fp64_p8_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { double c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    dvec4 c0 = dvec4(gx);
+    dvec4 c1 = dvec4(lx);
+
+    dvec4 a = c0 + dvec4(0,1,2,-3);
+    dvec4 b = c1 + dvec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = (c0[0] + c0[1]) + (c0[2] + c0[3]);
+}
+)";
+
+static const char glsl_fp64_p8_dual_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { double c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    dvec4 c0 = dvec4(gx);
+    dvec4 c1 = dvec4(lx);
+    dvec4 c2 = dvec4(gx) + dvec4(1);
+    dvec4 c3 = dvec4(lx) + dvec4(1);
+
+    dvec4 a = c0 + dvec4(0,1,2,-3);
+    dvec4 b = c1 + dvec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b; c2 = a * c2 + b; c3 = a * c3 + b;)
+    R"(
+}
+
+    c0 = c0 + c1 + c2 + c3;
     c_blob_data[gx] = (c0[0] + c0[1]) + (c0[2] + c0[3]);
 }
 )";
@@ -281,6 +514,62 @@ void main()
 }
 )";
 
+static const char glsl_int32_p2_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    ivec2 c = ivec2(gx);
+
+    ivec2 a = c + ivec2(0,1);
+    ivec2 b = ivec2(lx) + ivec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c = a * c + b;)
+    R"(
+}
+
+    c_blob_data[gx] = c[0] + c[1];
+}
+)";
+
+static const char glsl_int32_p2_dual_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    ivec2 c0 = ivec2(gx);
+    ivec2 c1 = ivec2(lx);
+
+    ivec2 a = c0 + ivec2(0,1);
+    ivec2 b = c1 + ivec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = c0[0] + c0[1];
+}
+)";
+
 static const char glsl_int32_p4_data[] = R"(
 #version 450
 
@@ -301,7 +590,8 @@ void main()
     for (int i = 0; i < loop; i++)
     {)"
         REPEAT_16(c = a * c + b;)
-    R"(}
+    R"(
+}
 
     c_blob_data[gx] = (c[0] + c[1]) + (c[2] + c[3]);
 }
@@ -328,9 +618,70 @@ void main()
     for (int i = 0; i < loop; i++)
     {)"
         REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
-    R"(}
+    R"(
+}
 
     c0 = c0 + c1;
+    c_blob_data[gx] = (c0[0] + c0[1]) + (c0[2] + c0[3]);
+}
+)";
+
+static const char glsl_int32_p8_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    ivec4 c0 = ivec4(gx);
+    ivec4 c1 = ivec4(lx);
+
+    ivec4 a = c0 + ivec4(0,1,2,-3);
+    ivec4 b = c1 + ivec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = (c0[0] + c0[1]) + (c0[2] + c0[3]);
+}
+)";
+
+static const char glsl_int32_p8_dual_data[] = R"(
+#version 450
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    ivec4 c0 = ivec4(gx);
+    ivec4 c1 = ivec4(lx);
+    ivec4 c2 = ivec4(gx) + ivec4(1);
+    ivec4 c3 = ivec4(lx) + ivec4(1);
+
+    ivec4 a = c0 + ivec4(0,1,2,-3);
+    ivec4 b = c1 + ivec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b; c2 = a * c2 + b; c3 = a * c3 + b;)
+    R"(
+}
+
+    c0 = c0 + c1 + c2 + c3;
     c_blob_data[gx] = (c0[0] + c0[1]) + (c0[2] + c0[3]);
 }
 )";
@@ -393,6 +744,66 @@ void main()
 }
 )";
 
+static const char glsl_int16_p2_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int16: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i16vec2 c = i16vec2(gx);
+
+    i16vec2 a = c + i16vec2(0,1);
+    i16vec2 b = i16vec2(lx) + i16vec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c = a * c + b;)
+    R"(
+}
+
+    c_blob_data[gx] = int(c[0] + c[1]);
+}
+)";
+
+static const char glsl_int16_p2_dual_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int16: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i16vec2 c0 = i16vec2(gx);
+    i16vec2 c1 = i16vec2(lx);
+
+    i16vec2 a = c0 + i16vec2(0,1);
+    i16vec2 b = c1 + i16vec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = int(c0[0] + c0[1]);
+}
+)";
+
 static const char glsl_int16_p4_data[] = R"(
 #version 450
 
@@ -451,6 +862,70 @@ void main()
 }
 )";
 
+static const char glsl_int16_p8_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int16: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i16vec4 c0 = i16vec4(gx);
+    i16vec4 c1 = i16vec4(lx);
+
+    i16vec4 a = c0 + i16vec4(0,1,2,-3);
+    i16vec4 b = c1 + i16vec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = int((c0[0] + c0[1]) + (c0[2] + c0[3]));
+}
+)";
+
+static const char glsl_int16_p8_dual_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int16: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i16vec4 c0 = i16vec4(gx);
+    i16vec4 c1 = i16vec4(lx);
+    i16vec4 c2 = i16vec4(gx) + i16vec4(1);
+    i16vec4 c3 = i16vec4(lx) + i16vec4(1);
+
+    i16vec4 a = c0 + i16vec4(0,1,2,-3);
+    i16vec4 b = c1 + i16vec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b; c2 = a * c2 + b; c3 = a * c3 + b;)
+    R"(
+}
+
+    c0 = c0 + c1 + c2 + c3;
+    c_blob_data[gx] = int((c0[0] + c0[1]) + (c0[2] + c0[3]));
+}
+)";
+
 static const char glsl_int64_p1_data[] = R"(
 #version 450
 
@@ -493,19 +968,68 @@ void main()
     const uint gx = gl_GlobalInvocationID.x;
     const uint lx = gl_LocalInvocationID.x;
 
-    int64_t c0 = int64_t(gx);
-    int64_t c1 = int64_t(lx);
+    c0 = c0 + c1;
+    c_blob_data[gx] = c0;
+}
+)";
 
-    int64_t a = c0;
-    int64_t b = c1;
+static const char glsl_int64_p2_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int64_t c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i64vec2 c = i64vec2(gx);
+
+    i64vec2 a = c + i64vec2(0,1);
+    i64vec2 b = i64vec2(lx) + i64vec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c = a * c + b;)
+    R"(
+}
+
+    c_blob_data[gx] = c[0] + c[1];
+}
+)";
+
+static const char glsl_int64_p2_dual_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int64_t c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i64vec2 c0 = i64vec2(gx);
+    i64vec2 c1 = i64vec2(lx);
+
+    i64vec2 a = c0 + i64vec2(0,1);
+    i64vec2 b = c1 + i64vec2(2,3);
 
     for (int i = 0; i < loop; i++)
     {)"
         REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
-    R"(}
+    R"(
+}
 
     c0 = c0 + c1;
-    c_blob_data[gx] = c0;
+    c_blob_data[gx] = c0[0] + c0[1];
 }
 )";
 
@@ -567,6 +1091,70 @@ void main()
 }
 )";
 
+static const char glsl_int64_p8_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int64_t c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i64vec4 c0 = i64vec4(gx);
+    i64vec4 c1 = i64vec4(lx);
+
+    i64vec4 a = c0 + i64vec4(0,1,2,-3);
+    i64vec4 b = c1 + i64vec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = (c0[0] + c0[1]) + (c0[2] + c0[3]);
+}
+)";
+
+static const char glsl_int64_p8_dual_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int64_t c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i64vec4 c0 = i64vec4(gx);
+    i64vec4 c1 = i64vec4(lx);
+    i64vec4 c2 = i64vec4(gx) + i64vec4(1);
+    i64vec4 c3 = i64vec4(lx) + i64vec4(1);
+
+    i64vec4 a = c0 + i64vec4(0,1,2,-3);
+    i64vec4 b = c1 + i64vec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b; c2 = a * c2 + b; c3 = a * c3 + b;)
+    R"(
+}
+
+    c0 = c0 + c1 + c2 + c3;
+    c_blob_data[gx] = (c0[0] + c0[1]) + (c0[2] + c0[3]);
+}
+)";
+
 static const char glsl_int8_p4_data[] = R"(
 #version 450
 
@@ -622,6 +1210,250 @@ void main()
 
     c0 = c0 + c1;
     c_blob_data[gx] = c0;
+}
+)";
+
+static const char glsl_int8_p8_data[] = R"(
+#version 450
+
+#extension GL_EXT_integer_dot_product: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    int c0 = int(gx);
+    int c1 = int(lx);
+
+    int a = int(gx);
+    int b = int(lx);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c0 = dotPacked4x8AccSatEXT(a, b, c0); c1 = dotPacked4x8AccSatEXT(a, b, c1);)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = c0;
+}
+)";
+
+static const char glsl_int8_p8_dual_data[] = R"(
+#version 450
+
+#extension GL_EXT_integer_dot_product: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    int c0 = int(gx);
+    int c1 = int(lx);
+    int c2 = int(gx) + 1;
+    int c3 = int(lx) + 1;
+
+    int a = int(gx);
+    int b = int(lx);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = dotPacked4x8AccSatEXT(a, b, c0); c1 = dotPacked4x8AccSatEXT(a, b, c1); c2 = dotPacked4x8AccSatEXT(a, b, c2); c3 = dotPacked4x8AccSatEXT(a, b, c3);)
+    R"(
+}
+
+    c0 = c0 + c1 + c2 + c3;
+    c_blob_data[gx] = c0;
+}
+)";
+
+static const char glsl_int8_p1_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int8: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    int8_t c = int8_t(gx);
+
+    int8_t a = c;
+    int8_t b = int8_t(lx);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c = a * c + b;)
+    R"(
+}
+
+    c_blob_data[gx] = int(c);
+}
+)";
+
+static const char glsl_int8_p1_dual_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int8: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    int8_t c0 = int8_t(gx);
+    int8_t c1 = int8_t(lx);
+
+    int8_t a = c0;
+    int8_t b = c1;
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = int(c0);
+}
+)";
+
+static const char glsl_int8_p2_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int8: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i8vec2 c = i8vec2(gx);
+
+    i8vec2 a = c + i8vec2(0,1);
+    i8vec2 b = i8vec2(lx) + i8vec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c = a * c + b;)
+    R"(
+}
+
+    c_blob_data[gx] = int(c[0] + c[1]);
+}
+)";
+
+static const char glsl_int8_p2_dual_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int8: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i8vec2 c0 = i8vec2(gx);
+    i8vec2 c1 = i8vec2(lx);
+
+    i8vec2 a = c0 + i8vec2(0,1);
+    i8vec2 b = c1 + i8vec2(2,3);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = int(c0[0] + c0[1]);
+}
+)";
+
+static const char glsl_int8_p4_arith_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int8: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i8vec4 c = i8vec4(gx);
+
+    i8vec4 a = c + i8vec4(0,1,2,-3);
+    i8vec4 b = i8vec4(lx) + i8vec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c = a * c + b;)
+    R"(
+}
+
+    c_blob_data[gx] = int(c[0] + c[1] + c[2] + c[3]);
+}
+)";
+
+static const char glsl_int8_p4_arith_dual_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int8: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i8vec4 c0 = i8vec4(gx);
+    i8vec4 c1 = i8vec4(lx);
+
+    i8vec4 a = c0 + i8vec4(0,1,2,-3);
+    i8vec4 b = c1 + i8vec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = int(c0[0] + c0[1] + c0[2] + c0[3]);
 }
 )";
 
@@ -688,6 +1520,97 @@ void main()
     R"(}
 
     c_blob_data[gx] = float(c0) + float(c1);
+}
+)";
+
+static const char glsl_bf16_p8_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_float16: require
+#extension GL_EXT_shader_16bit_storage: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { uint16_t c_blob_data[]; };
+
+// bf16 emulation with uint16 storage
+// no saturation
+bf16vec4 uintBitsToBFloat16EXT(u16vec4 v)
+{
+    return bf16vec4(unpackFloat2x16(packInt2x16(ivec2(v.rg))), unpackFloat2x16(packInt2x16(ivec2(v.ba))));
+}
+
+u16vec4 bfloat16BitsToUintEXT(bf16vec4 v)
+{
+    return u16vec4(unpackInt2x16(packFloat2x16(v.rg)), unpackInt2x16(packFloat2x16(v.ba)));
+}
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    u16vec4 c0 = uint16_t(gx) + u16vec4(0,1,2,3);
+    u16vec4 c1 = uint16_t(lx) + u16vec4(0,1,2,3);
+
+    u16vec4 a = uint16_t(gx) + u16vec4(0,1,2,3);
+    bf16vec4 b = uintBitsToBFloat16EXT(uint16_t(lx) + u16vec4(2,3,5,7));
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c0 = bfloat16BitsToUintEXT(uintBitsToBFloat16EXT(a) * b + uintBitsToBFloat16EXT(c0)); c1 = bfloat16BitsToUintEXT(uintBitsToBFloat16EXT(a) * b + uintBitsToBFloat16EXT(c1));)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = c0.r + c0.g + c0.b + c0.a;
+}
+)";
+
+static const char glsl_bf16_p8_dual_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_float16: require
+#extension GL_EXT_shader_16bit_storage: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { uint16_t c_blob_data[]; };
+
+// bf16 emulation with uint16 storage
+// no saturation
+bf16vec4 uintBitsToBFloat16EXT(u16vec4 v)
+{
+    return bf16vec4(unpackFloat2x16(packInt2x16(ivec2(v.rg))), unpackFloat2x16(packInt2x16(ivec2(v.ba))));
+}
+
+u16vec4 bfloat16BitsToUintEXT(bf16vec4 v)
+{
+    return u16vec4(unpackInt2x16(packFloat2x16(v.rg)), unpackInt2x16(packFloat2x16(v.ba)));
+}
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    u16vec4 c0 = uint16_t(gx) + u16vec4(0,1,2,3);
+    u16vec4 c1 = uint16_t(lx) + u16vec4(0,1,2,3);
+    u16vec4 c2 = uint16_t(gx) + u16vec4(10,21,32,43);
+    u16vec4 c3 = uint16_t(lx) + u16vec4(10,21,32,43);
+
+    u16vec4 a0 = uint16_t(gx) + u16vec4(0,1,2,3);
+    u16vec4 a1 = uint16_t(gx) + u16vec4(10,21,32,43);
+    bf16vec4 b = uintBitsToBFloat16EXT(uint16_t(lx) + u16vec4(2,3,5,7));
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = bfloat16BitsToUintEXT(uintBitsToBFloat16EXT(a0) * b + uintBitsToBFloat16EXT(c0)); c1 = bfloat16BitsToUintEXT(uintBitsToBFloat16EXT(a1) * b + uintBitsToBFloat16EXT(c1)); c2 = bfloat16BitsToUintEXT(uintBitsToBFloat16EXT(a0) * b + uintBitsToBFloat16EXT(c2)); c3 = bfloat16BitsToUintEXT(uintBitsToBFloat16EXT(a1) * b + uintBitsToBFloat16EXT(c3));)
+    R"(
+}
+
+    c0 = c0 + c1 + c2 + c3;
+    c_blob_data[gx] = c0.r + c0.g + c0.b + c0.a;
 }
 )";
 
@@ -1513,7 +2436,7 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
 
     // check shader int8 dotprod feature
     bool has_shader_int8_dotprod = vkdev->info.queryShaderIntegerDotProductFeatures().shaderIntegerDotProduct;
-    if (!has_shader_int8_dotprod && (arithmetic_type == 6 && packing_type == 4))
+    if (!has_shader_int8_dotprod && (arithmetic_type == 6 && (packing_type == 4 || packing_type == 8)))
     {
         return 0;
     }
@@ -1541,6 +2464,7 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
 
     // check shader fp8 feature
     bool has_shader_fp8 = vkdev->info.queryShaderFloat8Features().shaderFloat8;
+    if (arithmetic_type == 8 || arithmetic_type == 9) fprintf(stderr, "DEBUG: has_shader_fp8 = %d\n", has_shader_fp8);
     if (!has_shader_fp8 && (arithmetic_type == 8 || arithmetic_type == 9))
     {
         return 0;
@@ -1971,6 +2895,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                     ncnn::compile_spirv_module(glsl_fp64_p4_data, sizeof(glsl_fp64_p4_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_fp64_p4_dual_data, sizeof(glsl_fp64_p4_dual_data) - 1, opt, spirv_dual);
                 }
+                if (packing_type == 8)
+                {
+                    ncnn::compile_spirv_module(glsl_fp64_p8_data, sizeof(glsl_fp64_p8_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_fp64_p8_dual_data, sizeof(glsl_fp64_p8_dual_data) - 1, opt, spirv_dual);
+                }
             }
             else if (arithmetic_type == 3)
             {
@@ -1983,6 +2912,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                 {
                     ncnn::compile_spirv_module(glsl_int32_p4_data, sizeof(glsl_int32_p4_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_int32_p4_dual_data, sizeof(glsl_int32_p4_dual_data) - 1, opt, spirv_dual);
+                }
+                if (packing_type == 8)
+                {
+                    ncnn::compile_spirv_module(glsl_int32_p8_data, sizeof(glsl_int32_p8_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int32_p8_dual_data, sizeof(glsl_int32_p8_dual_data) - 1, opt, spirv_dual);
                 }
             }
             else if (arithmetic_type == 4)
@@ -1997,6 +2931,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                     ncnn::compile_spirv_module(glsl_int16_p4_data, sizeof(glsl_int16_p4_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_int16_p4_dual_data, sizeof(glsl_int16_p4_dual_data) - 1, opt, spirv_dual);
                 }
+                if (packing_type == 8)
+                {
+                    ncnn::compile_spirv_module(glsl_int16_p8_data, sizeof(glsl_int16_p8_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int16_p8_dual_data, sizeof(glsl_int16_p8_dual_data) - 1, opt, spirv_dual);
+                }
             }
             else if (arithmetic_type == 5)
             {
@@ -2010,13 +2949,38 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                     ncnn::compile_spirv_module(glsl_int64_p4_data, sizeof(glsl_int64_p4_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_int64_p4_dual_data, sizeof(glsl_int64_p4_dual_data) - 1, opt, spirv_dual);
                 }
+                if (packing_type == 8)
+                {
+                    ncnn::compile_spirv_module(glsl_int64_p8_data, sizeof(glsl_int64_p8_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int64_p8_dual_data, sizeof(glsl_int64_p8_dual_data) - 1, opt, spirv_dual);
+                }
             }
             else if (arithmetic_type == 6)
             {
+                if (packing_type == 1)
+                {
+                    ncnn::compile_spirv_module(glsl_int8_p1_data, sizeof(glsl_int8_p1_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int8_p1_dual_data, sizeof(glsl_int8_p1_dual_data) - 1, opt, spirv_dual);
+                }
+                if (packing_type == 2)
+                {
+                    ncnn::compile_spirv_module(glsl_int8_p2_data, sizeof(glsl_int8_p2_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int8_p2_dual_data, sizeof(glsl_int8_p2_dual_data) - 1, opt, spirv_dual);
+                }
                 if (packing_type == 4)
                 {
                     ncnn::compile_spirv_module(glsl_int8_p4_data, sizeof(glsl_int8_p4_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_int8_p4_dual_data, sizeof(glsl_int8_p4_dual_data) - 1, opt, spirv_dual);
+                }
+                if (packing_type == 8)
+                {
+                    ncnn::compile_spirv_module(glsl_int8_p8_data, sizeof(glsl_int8_p8_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int8_p8_dual_data, sizeof(glsl_int8_p8_dual_data) - 1, opt, spirv_dual);
+                }
+                if (packing_type == 104)
+                {
+                    ncnn::compile_spirv_module(glsl_int8_p4_arith_data, sizeof(glsl_int8_p4_arith_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int8_p4_arith_dual_data, sizeof(glsl_int8_p4_arith_dual_data) - 1, opt, spirv_dual);
                 }
                 if (packing_type == 256)
                 {
@@ -2037,6 +3001,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                 {
                     ncnn::compile_spirv_module(glsl_bf16_p4_data, sizeof(glsl_bf16_p4_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_bf16_p4_dual_data, sizeof(glsl_bf16_p4_dual_data) - 1, opt, spirv_dual);
+                }
+                if (packing_type == 8)
+                {
+                    ncnn::compile_spirv_module(glsl_bf16_p8_data, sizeof(glsl_bf16_p8_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_bf16_p8_dual_data, sizeof(glsl_bf16_p8_dual_data) - 1, opt, spirv_dual);
                 }
                 if (packing_type == 256)
                 {
@@ -2112,10 +3081,20 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                     ncnn::compile_spirv_module(glsl_p1_data, sizeof(glsl_p1_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_p1_dual_data, sizeof(glsl_p1_dual_data) - 1, opt, spirv_dual);
                 }
+                if (packing_type == 2)
+                {
+                    ncnn::compile_spirv_module(glsl_p2_data, sizeof(glsl_p2_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_p2_dual_data, sizeof(glsl_p2_dual_data) - 1, opt, spirv_dual);
+                }
                 if (packing_type == 4)
                 {
                     ncnn::compile_spirv_module(glsl_p4_data, sizeof(glsl_p4_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_p4_dual_data, sizeof(glsl_p4_dual_data) - 1, opt, spirv_dual);
+                }
+                if (packing_type == 8)
+                {
+                    ncnn::compile_spirv_module(glsl_p8_data, sizeof(glsl_p8_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_p8_dual_data, sizeof(glsl_p8_dual_data) - 1, opt, spirv_dual);
                 }
                 if (packing_type == 256)
                 {
@@ -2571,40 +3550,57 @@ int main(int argc, char** argv)
 
     fprintf(stderr, "\n");
     fprintf(stderr, "fp32-scalar  = %.2f GFLOPS\n", vkpeak(device_id, 0, 0, 1));
+    fprintf(stderr, "fp32-vec2    = %.2f GFLOPS\n", vkpeak(device_id, 0, 0, 2));
     fprintf(stderr, "fp32-vec4    = %.2f GFLOPS\n", vkpeak(device_id, 0, 0, 4));
+    fprintf(stderr, "fp32-vec8    = %.2f GFLOPS\n", vkpeak(device_id, 0, 0, 8));
 
     fprintf(stderr, "\n");
     fprintf(stderr, "fp16-scalar  = %.2f GFLOPS\n", vkpeak(device_id, 0, 1, 1));
+    fprintf(stderr, "fp16-vec2    = %.2f GFLOPS\n", vkpeak(device_id, 0, 1, 2));
     fprintf(stderr, "fp16-vec4    = %.2f GFLOPS\n", vkpeak(device_id, 0, 1, 4));
+    fprintf(stderr, "fp16-vec8    = %.2f GFLOPS\n", vkpeak(device_id, 0, 1, 8));
     fprintf(stderr, "fp16-matrix  = %.2f GFLOPS\n", vkpeak(device_id, 1, 1, 256));
 
     fprintf(stderr, "\n");
     fprintf(stderr, "fp64-scalar  = %.2f GFLOPS\n", vkpeak(device_id, 2, 2, 1));
+    fprintf(stderr, "fp64-vec2    = %.2f GFLOPS\n", vkpeak(device_id, 2, 2, 2));
     fprintf(stderr, "fp64-vec4    = %.2f GFLOPS\n", vkpeak(device_id, 2, 2, 4));
+    fprintf(stderr, "fp64-vec8    = %.2f GFLOPS\n", vkpeak(device_id, 2, 2, 8));
 
     fprintf(stderr, "\n");
     fprintf(stderr, "int32-scalar = %.2f GIOPS\n", vkpeak(device_id, 3, 3, 1));
+    // fprintf(stderr, "int32-vec2   = %.2f GIOPS\n", vkpeak(device_id, 3, 3, 2));
     fprintf(stderr, "int32-vec4   = %.2f GIOPS\n", vkpeak(device_id, 3, 3, 4));
+    fprintf(stderr, "int32-vec8   = %.2f GIOPS\n", vkpeak(device_id, 3, 3, 8));
 
     fprintf(stderr, "\n");
     fprintf(stderr, "int16-scalar = %.2f GIOPS\n", vkpeak(device_id, 3, 4, 1));
+    // fprintf(stderr, "int16-vec2   = %.2f GIOPS\n", vkpeak(device_id, 3, 4, 2));
     fprintf(stderr, "int16-vec4   = %.2f GIOPS\n", vkpeak(device_id, 3, 4, 4));
+    fprintf(stderr, "int16-vec8   = %.2f GIOPS\n", vkpeak(device_id, 3, 4, 8));
 
     fprintf(stderr, "\n");
-    fprintf(stderr, "int64-scalar = %.2f GIOPS\n", vkpeak(device_id, 5, 5, 1));
-    fprintf(stderr, "int64-vec4   = %.2f GIOPS\n", vkpeak(device_id, 5, 5, 4));
+    // fprintf(stderr, "int64-scalar = %.2f GIOPS\n", vkpeak(device_id, 5, 5, 1));
+    // fprintf(stderr, "int64-vec2   = %.2f GIOPS\n", vkpeak(device_id, 5, 5, 2));
+    // fprintf(stderr, "int64-vec4   = %.2f GIOPS\n", vkpeak(device_id, 5, 5, 4));
+    // fprintf(stderr, "int64-vec8   = %.2f GIOPS\n", vkpeak(device_id, 5, 5, 8));
 
     fprintf(stderr, "\n");
-    fprintf(stderr, "int8-dotprod = %.2f GIOPS\n", vkpeak(device_id, 3, 6, 4));
+    fprintf(stderr, "int8-scalar  = %.2f GIOPS\n", vkpeak(device_id, 3, 6, 1));
+    fprintf(stderr, "int8-vec2    = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 2));
+    fprintf(stderr, "int8-vec4    = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 104));
+    fprintf(stderr, "int8-dotprod = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 4));
+    fprintf(stderr, "int8-vec8    = %.2f GIOPS\n", vkpeak(device_id, 3, 6, 8));
     fprintf(stderr, "int8-matrix  = %.2f GIOPS\n", vkpeak(device_id, 3, 6, 256));
+    
+    fprintf(stderr, "\n");
+    fprintf(stderr, "bf16-dotprod = %.2f GFLOPS\n", vkpeak(device_id, 1, 7, 4));
+    fprintf(stderr, "bf16-vec8    = %.2f GFLOPS\n", vkpeak(device_id, 1, 7, 8));
+    fprintf(stderr, "bf16-matrix  = %.2f GFLOPS\n", vkpeak(device_id, 1, 7, 256));
 
     fprintf(stderr, "\n");
-    fprintf(stderr, "bf16-dotprod = %.2f GFLOPS\n", vkpeak(device_id, 0, 7, 4));
-    fprintf(stderr, "bf16-matrix  = %.2f GFLOPS\n", vkpeak(device_id, 0, 7, 256));
-
-    fprintf(stderr, "\n");
-    fprintf(stderr, "fp8-matrix   = %.2f GFLOPS\n", vkpeak(device_id, 0, 8, 256));
-    fprintf(stderr, "bf8-matrix   = %.2f GFLOPS\n", vkpeak(device_id, 0, 9, 256));
+    fprintf(stderr, "fp8-matrix   = %.2f GFLOPS\n", vkpeak(device_id, 1, 8, 256));
+    fprintf(stderr, "bf8-matrix   = %.2f GFLOPS\n", vkpeak(device_id, 1, 9, 256));
 
     // device_type
     //      0 = cpu
