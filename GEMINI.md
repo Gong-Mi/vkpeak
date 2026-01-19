@@ -78,6 +78,15 @@ The user may ask: *"How do I know this compute power is effective and not just c
 2.  **AI Operator Validation:** `vkpeak` measures potential. Real "effective" power for LLMs must be verified by running unit tests (e.g., `ncnn` layer tests) that compare GPU output `L2 Norm` against CPU/PyTorch reference.
 3.  **Silent Data Corruption (SDC):** If you suspect the GPU is calculating "wrong content" despite high GFLOPS, run the `check_vulkan_extensions` tool or standard stress tests (like `GpuTest` or `3DMark`) which include image verification.
 
+## Algorithmic Validity: Why trust the numbers?
+The user asked: *"The algorithm affects effectiveness, you can't separate them."* — This is correct. `vkpeak` uses specific algorithmic techniques to ensure the GPU *actually* works hard and doesn't just optimize the code away:
+
+1.  **Specialization Constants:** The loop count `N` is injected at runtime (via Vulkan Specialization Constants) rather than hardcoded. The shader compiler cannot pre-calculate the result or remove the loop (Dead Code Elimination) because it doesn't know `N` during compilation.
+2.  **Data Dependency Chains:** The core formula `c = c * a + b` creates a strict temporal dependency. The GPU cannot start iteration `i+1` until `i` is finished (unless utilizing ILP with `dual` chains). This forces the ALUs to execute every single instruction.
+3.  **Global Write-Back:** The final result is written to global memory, forcing the GPU to commit the calculation.
+
+**Conclusion:** `vkpeak` measures the **Algorithmic Ceiling** (Hardware Limit). Your real-world LLM operators will likely perform lower (the "Floor") due to memory latency and complex logic, but they can never exceed this Ceiling.
+
 ## Development Conventions
 *   **Shader embedding:** Compute shaders are embedded directly in `vkpeak.cpp` as `static const char` strings.
 *   **Dependency Management:** `ncnn` is built as a static library within the project tree; system-wide installation of ncnn is not required/assumed.
