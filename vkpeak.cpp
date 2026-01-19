@@ -968,6 +968,17 @@ void main()
     const uint gx = gl_GlobalInvocationID.x;
     const uint lx = gl_LocalInvocationID.x;
 
+    int64_t c0 = int64_t(gx);
+    int64_t c1 = int64_t(lx);
+
+    int64_t a = c0;
+    int64_t b = c1;
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(}
+
     c0 = c0 + c1;
     c_blob_data[gx] = c0;
 }
@@ -2386,7 +2397,7 @@ void main()
 }
 )";
 
-static double vkpeak(int device_id, int storage_type, int arithmetic_type, int packing_type)
+static double vkpeak(int device_id, int storage_type, int arithmetic_type, int packing_type, int mode = 0)
 {
     ncnn::VulkanDevice* vkdev = ncnn::get_gpu_device(device_id);
 
@@ -2890,6 +2901,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                     ncnn::compile_spirv_module(glsl_fp64_p1_data, sizeof(glsl_fp64_p1_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_fp64_p1_dual_data, sizeof(glsl_fp64_p1_dual_data) - 1, opt, spirv_dual);
                 }
+                if (packing_type == 2)
+                {
+                    ncnn::compile_spirv_module(glsl_fp64_p2_data, sizeof(glsl_fp64_p2_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_fp64_p2_dual_data, sizeof(glsl_fp64_p2_dual_data) - 1, opt, spirv_dual);
+                }
                 if (packing_type == 4)
                 {
                     ncnn::compile_spirv_module(glsl_fp64_p4_data, sizeof(glsl_fp64_p4_data) - 1, opt, spirv);
@@ -2907,6 +2923,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                 {
                     ncnn::compile_spirv_module(glsl_int32_p1_data, sizeof(glsl_int32_p1_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_int32_p1_dual_data, sizeof(glsl_int32_p1_dual_data) - 1, opt, spirv_dual);
+                }
+                if (packing_type == 2)
+                {
+                    ncnn::compile_spirv_module(glsl_int32_p2_data, sizeof(glsl_int32_p2_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int32_p2_dual_data, sizeof(glsl_int32_p2_dual_data) - 1, opt, spirv_dual);
                 }
                 if (packing_type == 4)
                 {
@@ -2926,6 +2947,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                     ncnn::compile_spirv_module(glsl_int16_p1_data, sizeof(glsl_int16_p1_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_int16_p1_dual_data, sizeof(glsl_int16_p1_dual_data) - 1, opt, spirv_dual);
                 }
+                if (packing_type == 2)
+                {
+                    ncnn::compile_spirv_module(glsl_int16_p2_data, sizeof(glsl_int16_p2_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int16_p2_dual_data, sizeof(glsl_int16_p2_dual_data) - 1, opt, spirv_dual);
+                }
                 if (packing_type == 4)
                 {
                     ncnn::compile_spirv_module(glsl_int16_p4_data, sizeof(glsl_int16_p4_data) - 1, opt, spirv);
@@ -2943,6 +2969,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                 {
                     ncnn::compile_spirv_module(glsl_int64_p1_data, sizeof(glsl_int64_p1_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_int64_p1_dual_data, sizeof(glsl_int64_p1_dual_data) - 1, opt, spirv_dual);
+                }
+                if (packing_type == 2)
+                {
+                    ncnn::compile_spirv_module(glsl_int64_p2_data, sizeof(glsl_int64_p2_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int64_p2_dual_data, sizeof(glsl_int64_p2_dual_data) - 1, opt, spirv_dual);
                 }
                 if (packing_type == 4)
                 {
@@ -3246,6 +3277,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
 
                 if (gflops > max_gflops)
                     max_gflops = gflops;
+                if (gflops_dual > max_gflops)
+                    max_gflops = gflops_dual;
+
+                if (mode == 1) return gflops;
+                if (mode == 2) return gflops_dual;
             }
         }
     }
@@ -3549,49 +3585,63 @@ int main(int argc, char** argv)
     //    256 = matrix
 
     fprintf(stderr, "\n");
-    fprintf(stderr, "fp32-scalar  = %.2f GFLOPS\n", vkpeak(device_id, 0, 0, 1));
-    fprintf(stderr, "fp32-vec2    = %.2f GFLOPS\n", vkpeak(device_id, 0, 0, 2));
-    fprintf(stderr, "fp32-vec4    = %.2f GFLOPS\n", vkpeak(device_id, 0, 0, 4));
-    fprintf(stderr, "fp32-vec8    = %.2f GFLOPS\n", vkpeak(device_id, 0, 0, 8));
+    fprintf(stderr, "fp32-scalar  = %7.2f GFLOPS\n", vkpeak(device_id, 0, 0, 1, 1));
+    fprintf(stderr, "fp32-dual    = %7.2f GFLOPS (Scalar x2)\n", vkpeak(device_id, 0, 0, 1, 2));
+    fprintf(stderr, "fp32-vec2    = %7.2f GFLOPS\n", vkpeak(device_id, 0, 0, 2, 1));
+    fprintf(stderr, "fp32-vec2-x2 = %7.2f GFLOPS (Vec2 x2)\n", vkpeak(device_id, 0, 0, 2, 2));
+    fprintf(stderr, "fp32-vec4    = %7.2f GFLOPS\n", vkpeak(device_id, 0, 0, 4));
+    fprintf(stderr, "fp32-vec8    = %7.2f GFLOPS\n", vkpeak(device_id, 0, 0, 8));
 
     fprintf(stderr, "\n");
-    fprintf(stderr, "fp16-scalar  = %.2f GFLOPS\n", vkpeak(device_id, 0, 1, 1));
-    fprintf(stderr, "fp16-vec2    = %.2f GFLOPS\n", vkpeak(device_id, 0, 1, 2));
-    fprintf(stderr, "fp16-vec4    = %.2f GFLOPS\n", vkpeak(device_id, 0, 1, 4));
-    fprintf(stderr, "fp16-vec8    = %.2f GFLOPS\n", vkpeak(device_id, 0, 1, 8));
-    fprintf(stderr, "fp16-matrix  = %.2f GFLOPS\n", vkpeak(device_id, 1, 1, 256));
+    fprintf(stderr, "fp16-scalar  = %7.2f GFLOPS\n", vkpeak(device_id, 0, 1, 1, 1));
+    fprintf(stderr, "fp16-dual    = %7.2f GFLOPS (Scalar x2)\n", vkpeak(device_id, 0, 1, 1, 2));
+    fprintf(stderr, "fp16-vec2    = %7.2f GFLOPS\n", vkpeak(device_id, 0, 1, 2, 1));
+    fprintf(stderr, "fp16-vec2-x2 = %7.2f GFLOPS (Vec2 x2)\n", vkpeak(device_id, 0, 1, 2, 2));
+    fprintf(stderr, "fp16-vec4    = %7.2f GFLOPS\n", vkpeak(device_id, 0, 1, 4));
+    fprintf(stderr, "fp16-vec8    = %7.2f GFLOPS\n", vkpeak(device_id, 0, 1, 8));
+    fprintf(stderr, "fp16-matrix  = %7.2f GFLOPS\n", vkpeak(device_id, 1, 1, 256));
 
     fprintf(stderr, "\n");
-    fprintf(stderr, "fp64-scalar  = %.2f GFLOPS\n", vkpeak(device_id, 2, 2, 1));
-    fprintf(stderr, "fp64-vec2    = %.2f GFLOPS\n", vkpeak(device_id, 2, 2, 2));
-    fprintf(stderr, "fp64-vec4    = %.2f GFLOPS\n", vkpeak(device_id, 2, 2, 4));
-    fprintf(stderr, "fp64-vec8    = %.2f GFLOPS\n", vkpeak(device_id, 2, 2, 8));
+    fprintf(stderr, "fp64-scalar  = %7.2f GFLOPS\n", vkpeak(device_id, 2, 2, 1, 1));
+    fprintf(stderr, "fp64-dual    = %7.2f GFLOPS (Scalar x2)\n", vkpeak(device_id, 2, 2, 1, 2));
+    fprintf(stderr, "fp64-vec2    = %7.2f GFLOPS\n", vkpeak(device_id, 2, 2, 2, 1));
+    fprintf(stderr, "fp64-vec2-x2 = %7.2f GFLOPS (Vec2 x2)\n", vkpeak(device_id, 2, 2, 2, 2));
+    fprintf(stderr, "fp64-vec4    = %7.2f GFLOPS\n", vkpeak(device_id, 2, 2, 4));
+    fprintf(stderr, "fp64-vec8    = %7.2f GFLOPS\n", vkpeak(device_id, 2, 2, 8));
 
     fprintf(stderr, "\n");
-    fprintf(stderr, "int32-scalar = %.2f GIOPS\n", vkpeak(device_id, 3, 3, 1));
-    // fprintf(stderr, "int32-vec2   = %.2f GIOPS\n", vkpeak(device_id, 3, 3, 2));
-    fprintf(stderr, "int32-vec4   = %.2f GIOPS\n", vkpeak(device_id, 3, 3, 4));
-    fprintf(stderr, "int32-vec8   = %.2f GIOPS\n", vkpeak(device_id, 3, 3, 8));
+    fprintf(stderr, "int32-scalar = %7.2f GIOPS\n", vkpeak(device_id, 3, 3, 1, 1));
+    fprintf(stderr, "int32-dual   = %7.2f GIOPS (Scalar x2)\n", vkpeak(device_id, 3, 3, 1, 2));
+    fprintf(stderr, "int32-vec2   = %7.2f GIOPS\n", vkpeak(device_id, 3, 3, 2, 1));
+    fprintf(stderr, "int32-vec2-x2= %7.2f GIOPS (Vec2 x2)\n", vkpeak(device_id, 3, 3, 2, 2));
+    fprintf(stderr, "int32-vec4   = %7.2f GIOPS\n", vkpeak(device_id, 3, 3, 4));
+    fprintf(stderr, "int32-vec8   = %7.2f GIOPS\n", vkpeak(device_id, 3, 3, 8));
 
     fprintf(stderr, "\n");
-    fprintf(stderr, "int16-scalar = %.2f GIOPS\n", vkpeak(device_id, 3, 4, 1));
-    // fprintf(stderr, "int16-vec2   = %.2f GIOPS\n", vkpeak(device_id, 3, 4, 2));
-    fprintf(stderr, "int16-vec4   = %.2f GIOPS\n", vkpeak(device_id, 3, 4, 4));
-    fprintf(stderr, "int16-vec8   = %.2f GIOPS\n", vkpeak(device_id, 3, 4, 8));
+    fprintf(stderr, "int16-scalar = %7.2f GIOPS\n", vkpeak(device_id, 3, 4, 1, 1));
+    fprintf(stderr, "int16-dual   = %7.2f GIOPS (Scalar x2)\n", vkpeak(device_id, 3, 4, 1, 2));
+    fprintf(stderr, "int16-vec2   = %7.2f GIOPS\n", vkpeak(device_id, 3, 4, 2, 1));
+    fprintf(stderr, "int16-vec2-x2= %7.2f GIOPS (Vec2 x2)\n", vkpeak(device_id, 3, 4, 2, 2));
+    fprintf(stderr, "int16-vec4   = %7.2f GIOPS\n", vkpeak(device_id, 3, 4, 4));
+    fprintf(stderr, "int16-vec8   = %7.2f GIOPS\n", vkpeak(device_id, 3, 4, 8));
 
     fprintf(stderr, "\n");
-    // fprintf(stderr, "int64-scalar = %.2f GIOPS\n", vkpeak(device_id, 5, 5, 1));
-    // fprintf(stderr, "int64-vec2   = %.2f GIOPS\n", vkpeak(device_id, 5, 5, 2));
-    // fprintf(stderr, "int64-vec4   = %.2f GIOPS\n", vkpeak(device_id, 5, 5, 4));
-    // fprintf(stderr, "int64-vec8   = %.2f GIOPS\n", vkpeak(device_id, 5, 5, 8));
+    fprintf(stderr, "int64-scalar = %7.2f GIOPS\n", vkpeak(device_id, 5, 5, 1, 1));
+    fprintf(stderr, "int64-dual   = %7.2f GIOPS (Scalar x2)\n", vkpeak(device_id, 5, 5, 1, 2));
+    fprintf(stderr, "int64-vec2   = %7.2f GIOPS\n", vkpeak(device_id, 5, 5, 2, 1));
+    fprintf(stderr, "int64-vec2-x2= %7.2f GIOPS (Vec2 x2)\n", vkpeak(device_id, 5, 5, 2, 2));
+    fprintf(stderr, "int64-vec4   = %7.2f GIOPS\n", vkpeak(device_id, 5, 5, 4));
+    fprintf(stderr, "int64-vec8   = %7.2f GIOPS\n", vkpeak(device_id, 5, 5, 8));
 
     fprintf(stderr, "\n");
-    fprintf(stderr, "int8-scalar  = %.2f GIOPS\n", vkpeak(device_id, 3, 6, 1));
-    fprintf(stderr, "int8-vec2    = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 2));
-    fprintf(stderr, "int8-vec4    = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 104));
+    fprintf(stderr, "int8-scalar  = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 1, 1));
+    fprintf(stderr, "int8-dual    = %7.2f GIOPS (Scalar x2)\n", vkpeak(device_id, 3, 6, 1, 2));
+    fprintf(stderr, "int8-vec2    = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 2, 1));
+    fprintf(stderr, "int8-vec2-x2 = %7.2f GIOPS (Vec2 x2)\n", vkpeak(device_id, 3, 6, 2, 2));
+    fprintf(stderr, "int8-vec4    = %7.2f GIOPS (Arithmetic)\n", vkpeak(device_id, 3, 6, 104));
     fprintf(stderr, "int8-dotprod = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 4));
-    fprintf(stderr, "int8-vec8    = %.2f GIOPS\n", vkpeak(device_id, 3, 6, 8));
-    fprintf(stderr, "int8-matrix  = %.2f GIOPS\n", vkpeak(device_id, 3, 6, 256));
+    fprintf(stderr, "int8-vec8    = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 8));
+    fprintf(stderr, "int8-matrix  = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 256));
     
     fprintf(stderr, "\n");
     fprintf(stderr, "bf16-dotprod = %.2f GFLOPS\n", vkpeak(device_id, 1, 7, 4));
