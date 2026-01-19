@@ -1468,6 +1468,70 @@ void main()
 }
 )";
 
+static const char glsl_int8_p8_arith_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int8: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i8vec4 c0 = i8vec4(gx);
+    i8vec4 c1 = i8vec4(lx);
+
+    i8vec4 a = c0 + i8vec4(0,1,2,-3);
+    i8vec4 b = c1 + i8vec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_16(c0 = a * c0 + b; c1 = a * c1 + b;)
+    R"(
+}
+
+    c0 = c0 + c1;
+    c_blob_data[gx] = int(c0[0] + c0[1] + c0[2] + c0[3]);
+}
+)";
+
+static const char glsl_int8_p8_arith_dual_data[] = R"(
+#version 450
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int8: require
+
+layout (constant_id = 0) const int loop = 1;
+
+layout (binding = 0) writeonly buffer c_blob { int c_blob_data[]; };
+
+void main()
+{
+    const uint gx = gl_GlobalInvocationID.x;
+    const uint lx = gl_LocalInvocationID.x;
+
+    i8vec4 c0 = i8vec4(gx);
+    i8vec4 c1 = i8vec4(lx);
+    i8vec4 c2 = i8vec4(gx) + i8vec4(1);
+    i8vec4 c3 = i8vec4(lx) + i8vec4(1);
+
+    i8vec4 a = c0 + i8vec4(0,1,2,-3);
+    i8vec4 b = c1 + i8vec4(2,3,5,-7);
+
+    for (int i = 0; i < loop; i++)
+    {)"
+        REPEAT_8(c0 = a * c0 + b; c1 = a * c1 + b; c2 = a * c2 + b; c3 = a * c3 + b;)
+    R"(
+}
+
+    c0 = c0 + c1 + c2 + c3;
+    c_blob_data[gx] = int(c0[0] + c0[1] + c0[2] + c0[3]);
+}
+)";
+
 static const char glsl_bf16_p4_data[] = R"(
 #version 450
 
@@ -3013,6 +3077,11 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                     ncnn::compile_spirv_module(glsl_int8_p4_arith_data, sizeof(glsl_int8_p4_arith_data) - 1, opt, spirv);
                     ncnn::compile_spirv_module(glsl_int8_p4_arith_dual_data, sizeof(glsl_int8_p4_arith_dual_data) - 1, opt, spirv_dual);
                 }
+                if (packing_type == 108)
+                {
+                    ncnn::compile_spirv_module(glsl_int8_p8_arith_data, sizeof(glsl_int8_p8_arith_data) - 1, opt, spirv);
+                    ncnn::compile_spirv_module(glsl_int8_p8_arith_dual_data, sizeof(glsl_int8_p8_arith_dual_data) - 1, opt, spirv_dual);
+                }
                 if (packing_type == 256)
                 {
                     // loop M N K SCOPE
@@ -3250,6 +3319,14 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                         mac *= M * N * K;
                         mac /= local_size_x;
                     }
+                    else if (packing_type == 104)
+                    {
+                        mac *= 4;
+                    }
+                    else if (packing_type == 108)
+                    {
+                        mac *= 8;
+                    }
                     else
                     {
                         mac *= packing_type;
@@ -3266,6 +3343,14 @@ static double vkpeak(int device_id, int storage_type, int arithmetic_type, int p
                     {
                         mac *= M * N * K;
                         mac /= local_size_x;
+                    }
+                    else if (packing_type == 104)
+                    {
+                        mac *= 4;
+                    }
+                    else if (packing_type == 108)
+                    {
+                        mac *= 8;
                     }
                     else
                     {
@@ -3643,9 +3728,10 @@ int main(int argc, char** argv)
     fprintf(stderr, "int8-dual    = %7.2f GIOPS (Scalar x2)\n", vkpeak(device_id, 3, 6, 1, 2));
     fprintf(stderr, "int8-vec2    = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 2, 1));
     fprintf(stderr, "int8-vec2-x2 = %7.2f GIOPS (Vec2 x2)\n", vkpeak(device_id, 3, 6, 2, 2));
-    fprintf(stderr, "int8-vec4    = %7.2f GIOPS (Arithmetic)\n", vkpeak(device_id, 3, 6, 104));
+    fprintf(stderr, "int8-general = %7.2f GIOPS (General ALU, no dotprod)\n", vkpeak(device_id, 3, 6, 104));
+    fprintf(stderr, "int8-general-x2 = %7.2f GIOPS (General ALU x2)\n", vkpeak(device_id, 3, 6, 108));
     fprintf(stderr, "int8-dotprod = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 4));
-    fprintf(stderr, "int8-vec8    = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 8));
+    fprintf(stderr, "int8-dotprod-x2 = %7.2f GIOPS (DotProduct x2)\n", vkpeak(device_id, 3, 6, 8));
     fprintf(stderr, "int8-matrix  = %7.2f GIOPS\n", vkpeak(device_id, 3, 6, 256));
     
     fprintf(stderr, "\n");
