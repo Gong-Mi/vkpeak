@@ -3564,8 +3564,10 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    fprintf(stderr, "device       = %s\n", ncnn::get_gpu_info(device_id).device_name());
-    fprintf(stderr, "driver       = %s\n", get_gpu_driver_info(device_id).c_str());
+    fprintf(stderr, "vkpeak %s\n", "20240505");
+    fprintf(stderr, "System: %s\n", ncnn::get_system_string());
+    fprintf(stderr, "[Disclaimer] This tool measures peak throughput. Results are NOT verified for correctness.\n");
+    fprintf(stderr, "[Guidance]   For AI operator matching, ensure GFLOPS matches theoretical limits (freq * cores * ops).\n");
 
     // storage_type / arithmetic_type
     //      0 = fp32

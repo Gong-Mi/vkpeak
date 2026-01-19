@@ -66,6 +66,18 @@ These metrics specifically test different strategies for saturating the GPU's ex
 *   **`vec2-x2` > `vec2`**: The architecture has high instruction latency. AI kernels need "loop unrolling" (computing multiple results per thread) to hide latency and saturate the pipeline.
 *   **`vec2-x2` < `vec2`**: Register pressure is too high. Complex kernels should avoid aggressive unrolling to prevent occupancy drops.
 
+## Verification & Effectiveness Guide
+The user may ask: *"How do I know this compute power is effective and not just calculating garbage?"*
+
+`vkpeak` assumes hardware stability and correctness. It does **not** perform bit-exact verification of the results against a CPU reference for every run. This is standard for peak-throughput micro-benchmarks.
+
+**To ensure the "Effective Compute Power" for LLM/AI:**
+1.  **Sanity Check Scores:** Calculate the theoretical peak: `Clock Speed (GHz) * Core Count * Ops/Cycle`.
+    *   If `vkpeak` reports significantly **higher** than theoretical (e.g., >120%), the result is likely invalid (compiler optimization or driver bug).
+    *   If `vkpeak` reports **NaN/Inf**, the GPU is unstable (overclocked too high or thermal throttling).
+2.  **AI Operator Validation:** `vkpeak` measures potential. Real "effective" power for LLMs must be verified by running unit tests (e.g., `ncnn` layer tests) that compare GPU output `L2 Norm` against CPU/PyTorch reference.
+3.  **Silent Data Corruption (SDC):** If you suspect the GPU is calculating "wrong content" despite high GFLOPS, run the `check_vulkan_extensions` tool or standard stress tests (like `GpuTest` or `3DMark`) which include image verification.
+
 ## Development Conventions
 *   **Shader embedding:** Compute shaders are embedded directly in `vkpeak.cpp` as `static const char` strings.
 *   **Dependency Management:** `ncnn` is built as a static library within the project tree; system-wide installation of ncnn is not required/assumed.
